@@ -99,6 +99,11 @@ logMessage "  Extract RPM file ... " 0
 mv ${RPMBUILD_DIR}/RPMS/x86_64/*.rpm . &> ${LOG}
 [ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
 
+# Delete the rpmbuild directory.
+logMessage "  Delete the rpmbuild directory ... " 0
+rm -rf ${RPMBUILD_DIR} &> ${LOG}
+[ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
+
 # Get the name of the RPM file.  We need to "echo" it so that the NAS Proxy
 # build script can receive it.
 logMessage "  Get RPM file name ... " 0
@@ -108,7 +113,7 @@ logMessage "Done (${RPM_PATH_NAME})." 1
 logMessage "" 1
 
 ########################################
-logMessage "`basename ${0}` Success." 1
+logMessage "  `basename ${0}` Success." 1
 echo "${RPM_PATH_NAME}"
 exit 0
 

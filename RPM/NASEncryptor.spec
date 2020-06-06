@@ -35,5 +35,5 @@ cp %{_src_lib_dir}/encryptorUtils         ${RPM_BUILD_ROOT}/%{_dst_lib_dir}/encr
 %files
 %defattr(-,root,root)
 
-%attr(0644,root,root) %{_dst_etc_dir}
+%attr(0644,root,root) %{_dst_etc_dir}/NASEncryptor.conf
 %attr(0755,root,root) %{_dst_lib_dir} 

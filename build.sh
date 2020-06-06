@@ -4,7 +4,12 @@
 # This is the build tool for the NAS Encryptor.
 ################################################################################
 
-echo "NAS Encryptor: This is the build script."
+export TOP_DIR=$( cd `dirname ${0}` && echo ${PWD} )
 
-exit 0
+echo "NAS Encryptor: This is the build script." &> /dev/stderr
+
+${TOP_DIR}/RPM/buildRPM.sh
+RC=$?
+
+exit ${RC}
 
