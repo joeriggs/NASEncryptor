@@ -81,13 +81,20 @@ rm -f ${PKG_FILE} &> ${LOG}
 logMessage "" 1
 
 ########################################
-# Download the packages that are required for EncFS.  They aren't part of
-# the standard CentOS 8 distribution, so we need to get them now.
+# Download the packages that are required for ecryptfs.  Some of them aren't
+# part of the standard CentOS 7 distribution, so we need to get them now.
 logMessage "Download required packages:" 1
 
-logMessage "  EncFS ... " 0
-sudo yum install -y --enablerepo=epel,PowerTools --downloadonly --downloaddir=${BLD_DIR} fuse-encfs &> ${LOG}
+logMessage "  ecryptfs-utils ... " 0
+sudo yum install -y --enablerepo=epel --downloadonly --downloaddir=${BLD_DIR} ecryptfs-utils &> ${LOG}
 [ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
+
+logMessage "  Verify pkcs11-helper RPM file ... " 0
+[ ! -f pkcs11-helper-*.el7.x86_64.rpm ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
+
+logMessage "  Verify ecryptfs-utils RPM file ... " 0
+[ ! -f ecryptfs-utils-*.el7.x86_64.rpm ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
+
 
 logMessage "" 1
 
