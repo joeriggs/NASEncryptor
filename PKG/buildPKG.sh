@@ -81,8 +81,8 @@ rm -f ${PKG_FILE} &> ${LOG}
 logMessage "" 1
 
 ########################################
-# Download the packages that are required for ecryptfs.  Some of them aren't
-# part of the standard Fedora 32 distribution, so we need to get them now.
+# Download the packages that are required for EncFS.  Some of them aren't
+# part of the standard CentOS 8 distribution, so we need to get them now.
 logMessage "Download required packages:" 1
 
 logMessage "  tinyxml2 ... " 0

@@ -10,12 +10,10 @@ The NAS Encryptor is an extension of the NAS Proxy.  It provides encryption to t
 %define _src_dir ${TOP_DIR}
 %define _src_etc_dir %{_src_dir}/etc
 %define _src_lib_dir %{_src_dir}/lib
-%define _src_mod_dir %{_src_etc_dir}/modules-load.d
 
 %define _dst_dir /usr/local
 %define _dst_etc_dir %{_dst_dir}/etc
 %define _dst_lib_dir %{_dst_dir}/lib
-%define _dst_mod_dir /etc/modules-load.d
 
 %build
 
@@ -23,13 +21,10 @@ The NAS Encryptor is an extension of the NAS Proxy.  It provides encryption to t
 
 mkdir -p ${RPM_BUILD_ROOT}/%{_dst_etc_dir}
 mkdir -p ${RPM_BUILD_ROOT}/%{_dst_lib_dir}
-mkdir -p ${RPM_BUILD_ROOT}/%{_dst_mod_dir}
 
 cp %{_src_etc_dir}/NASEncryptor.conf           ${RPM_BUILD_ROOT}/%{_dst_etc_dir}/NASEncryptor.conf
 
 cp %{_src_lib_dir}/encryptorUtils              ${RPM_BUILD_ROOT}/%{_dst_lib_dir}/encryptorUtils
-
-cp %{_src_mod_dir}/ecryptfs.conf               ${RPM_BUILD_ROOT}/%{_dst_mod_dir}/ecryptfs.conf
 
 %post
 
@@ -40,5 +35,4 @@ cp %{_src_mod_dir}/ecryptfs.conf               ${RPM_BUILD_ROOT}/%{_dst_mod_dir}
 
 %attr(0644,root,root) %{_dst_etc_dir}/NASEncryptor.conf
 %attr(0755,root,root) %{_dst_lib_dir}/encryptorUtils
-%attr(0644,root,root) %{_dst_mod_dir}/ecryptfs.conf
 
