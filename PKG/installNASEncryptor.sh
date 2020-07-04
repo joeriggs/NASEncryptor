@@ -2,20 +2,15 @@
 
 ####################
 # Get the names of the file(s) that we need to install.
-echo -n "Get the name of the pkcs11-helper-devel RPM file ... "
-PKCS11_HELPER_DEVEL_RPM_FILE=`find . -maxdepth 1 -name pkcs11-helper-devel-*fc32.x86_64.rpm`
+echo -n "Get the name of the tinyxml2 RPM file ... "
+TINYXML2_RPM_FILE=`find . -maxdepth 1 -name tinyxml2-*.el8.x86_64.rpm`
 [ $? -ne 0 ] && echo "Fail." && exit 1
-echo "Pass (${PKCS11_HELPER_DEVEL_RPM_FILE})."
+echo "Pass (${TINYXML2_RPM_FILE})."
 
-echo -n "Get the name of the trousers-devel RPM file ... "
-TROUSERS_DEVEL_RPM_FILE=`find . -maxdepth 1 -name trousers-devel-*fc32.x86_64.rpm`
+echo -n "Get the name of the EncFS RPM file ... "
+ENCFS_RPM_FILE=`find . -maxdepth 1 -name fuse-encfs-*.el8.x86_64.rpm`
 [ $? -ne 0 ] && echo "Fail." && exit 1
-echo "Pass (${TROUSERS_DEVEL_RPM_FILE})."
-
-echo -n "Get the name of the ecryptfs-utils RPM file ... "
-ECRYPTFS_UTILS_RPM_FILE=`find . -maxdepth 1 -name ecryptfs-utils-*fc32.x86_64.rpm`
-[ $? -ne 0 ] && echo "Fail." && exit 1
-echo "Pass (${ECRYPTFS_UTILS_RPM_FILE})."
+echo "Pass (${ENCFS_RPM_FILE})."
 
 echo -n "Get the name of the NAS Encryptor RPM file ... "
 NAS_ENCRYPTOR_RPM_FILE=`find . -maxdepth 1 -name NAS_Encryptor*.x86_64.rpm`
@@ -24,18 +19,13 @@ echo "Pass (${NAS_ENCRYPTOR_RPM_FILE})."
 
 ####################
 # Now install the file(s).
-echo -n "Install ${PKCS11_HELPER_DEVEL_RPM_FILE} ... "
-rpm -ihv ${PKCS11_HELPER_DEVEL_RPM_FILE}
+echo -n "Install ${TINYXML2_RPM_FILE} ... "
+rpm -ihv ${TINYXML2_RPM_FILE}
 [ $? -ne 0 ] && echo "Fail." && exit 1
 echo "Pass."
 
-echo -n "Install ${TROUSERS_DEVEL_RPM_FILE} ... "
-rpm -ihv ${TROUSERS_DEVEL_RPM_FILE}
-[ $? -ne 0 ] && echo "Fail." && exit 1
-echo "Pass."
-
-echo -n "Install ${ECRYPTFS_UTILS_RPM_FILE} ... "
-rpm -ihv ${ECRYPTFS_UTILS_RPM_FILE}
+echo -n "Install ${ENCFS_RPM_FILE} ... "
+rpm -ihv ${ENCFS_RPM_FILE}
 [ $? -ne 0 ] && echo "Fail." && exit 1
 echo "Pass."
 

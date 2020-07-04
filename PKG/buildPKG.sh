@@ -85,20 +85,19 @@ logMessage "" 1
 # part of the standard Fedora 32 distribution, so we need to get them now.
 logMessage "Download required packages:" 1
 
-logMessage "  pkcs11-helper-devel ... " 0
-sudo yum install -y --enablerepo=fedora --downloadonly --downloaddir=${BLD_DIR} pkcs11-helper-devel &> ${LOG}
+logMessage "  tinyxml2 ... " 0
+sudo yum install -y --enablerepo=epel,PowerTools --downloadonly --downloaddir=${BLD_DIR} tinyxml2 &> ${LOG}
 [ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
 
-logMessage "  trousers-devel ... " 0
-sudo yum install -y --enablerepo=fedora --downloadonly --downloaddir=${BLD_DIR} trousers-devel &> ${LOG}
+logMessage "    Verify RPM file ... " 0
+[ ! -f tinyxml2-*.el8.x86_64.rpm ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
+
+logMessage "  EncFS ... " 0
+sudo yum install -y --enablerepo=epel,PowerTools --downloadonly --downloaddir=${BLD_DIR} fuse-encfs &> ${LOG}
 [ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
 
-logMessage "  ecryptfs-utils ... " 0
-sudo yum install -y --enablerepo=fedora --downloadonly --downloaddir=${BLD_DIR} ecryptfs-utils &> ${LOG}
-[ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
-
-logMessage "  Verify ecryptfs-utils RPM file ... " 0
-[ ! -f ecryptfs-utils-*.fc32.x86_64.rpm ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
+logMessage "    Verify RPM file ... " 0
+[ ! -f fuse-encfs-*.el8.x86_64.rpm ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
 
 logMessage "" 1
 
