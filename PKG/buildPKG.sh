@@ -82,20 +82,25 @@ logMessage "" 1
 
 ########################################
 # Download the packages that are required for ecryptfs.  Some of them aren't
-# part of the standard CentOS 7 distribution, so we need to get them now.
-#logMessage "Download required packages:" 1
+# part of the standard Fedora 32 distribution, so we need to get them now.
+logMessage "Download required packages:" 1
 
-#logMessage "  ecryptfs-utils ... " 0
-#sudo yum install -y --enablerepo=epel --downloadonly --downloaddir=${BLD_DIR} ecryptfs-utils &> ${LOG}
-#[ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
+logMessage "  pkcs11-helper-devel ... " 0
+sudo yum install -y --enablerepo=fedora --downloadonly --downloaddir=${BLD_DIR} pkcs11-helper-devel &> ${LOG}
+[ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
 
-#logMessage "  Verify pkcs11-helper RPM file ... " 0
-#[ ! -f pkcs11-helper-*.el7.x86_64.rpm ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
+logMessage "  trousers-devel ... " 0
+sudo yum install -y --enablerepo=fedora --downloadonly --downloaddir=${BLD_DIR} trousers-devel &> ${LOG}
+[ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
 
-#logMessage "  Verify ecryptfs-utils RPM file ... " 0
-#[ ! -f ecryptfs-utils-*.el7.x86_64.rpm ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
+logMessage "  ecryptfs-utils ... " 0
+sudo yum install -y --enablerepo=fedora --downloadonly --downloaddir=${BLD_DIR} ecryptfs-utils &> ${LOG}
+[ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
 
-#logMessage "" 1
+logMessage "  Verify ecryptfs-utils RPM file ... " 0
+[ ! -f ecryptfs-utils-*.fc32.x86_64.rpm ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
+
+logMessage "" 1
 
 ########################################
 # Build the NAS Encryptor RPM.
