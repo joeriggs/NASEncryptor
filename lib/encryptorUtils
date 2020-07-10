@@ -1,5 +1,94 @@
 
 ################################################################################
-# Common macros and functions.
+# Common macros and functions for the NAS Encryptor.
 ################################################################################
+
+################################################################################
+# Initialization function for the NAS Encryptor.
+#
+# Input:
+#   LOG_FILE    = The name of the utility's log file.
+#
+#   VERBOSE     = Display console output.
+#
+# Output:
+#   0 - success.
+#   1 - failure.
+################################################################################
+encryptorInitialization() {
+	local LOG_FILE=${1}
+	local VERBOSE=${2}
+
+	[ ${VERBOSE} -eq 1 ] && echo -n "  Initializing the NAS Encryptor library ... "
+	#[ $? -ne 0 ] && echo "Fail." && exit 1
+	[ ${VERBOSE} -eq 1 ] && printResult ${RESULT_PASS}
+
+	return 0
+}
+
+################################################################################
+# Perform the steps necessary to encrypt the specified exported directory.
+################################################################################
+encryptorEncryptStart() {
+	echo "THIS IS THE encryptorEncryptStart() function."
+}
+
+################################################################################
+# Perform the steps necessary to stop encrypting the specified exported
+# directory.
+################################################################################
+encryptorEncryptStop() {
+	echo "THIS IS THE encryptorEncryptStop() function."
+}
+
+################################################################################
+# Clean up the configuration file(s) so we will no longer encrypt the specified
+# exported directory.
+################################################################################
+encryptorDelDirectory() {
+	echo "THIS IS THE encryptorDelDirectory() function."
+}
+
+################################################################################
+# Gather information necessary to encrypt a new exported directory.
+#
+# This function is allowed to query the user.
+#
+# Input:
+#   EXPORT_DIR  - The name of the directory that will be exported to the user.
+#                 It is useful to the NAS Encryptor because it will be unique
+#                 over all of the encrypted directories.
+#
+#   MOUNT_POINT - The directory that contains the mount point to the NAS.  This
+#                 is the directory that needs to be encrypted.
+#
+# Output:
+#   0 - success.
+#   1 - failure.
+################################################################################
+encryptorAddDirectory() {
+	local EXPORT_DIR="${1}"
+	local MOUNT_POINT="${2}"
+
+	echo "  EncFS requires a password for \"${MOUNT_POINT}\"."
+
+	local PW1="1"
+	local PW2="2"
+	while [ "${PW1}" != "${PW2}" ]; do
+		read -s -p "    Enter password: "
+		local PW1=${REPLY}
+		echo ""
+		read -s -p "    Re-enter password: "
+		local PW2=${REPLY}
+		echo ""
+
+		if [ "${PW1}" != "${PW2}" ]; then
+			echo "    Error: Passwords don't match.  Try again."
+		fi
+	done
+
+	echo ""
+
+	return 0
+}
 
