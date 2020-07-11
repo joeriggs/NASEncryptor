@@ -19,6 +19,11 @@ echo "Pass (${NAS_ENCRYPTOR_RPM_FILE})."
 
 ####################
 # Now install the file(s).
+echo -n "Install expect ... "
+yum install -y expect
+[ $? -ne 0 ] && echo "Fail." && exit 1
+echo "Pass."
+
 echo -n "Install ${TINYXML2_RPM_FILE} ... "
 rpm -ihv ${TINYXML2_RPM_FILE}
 [ $? -ne 0 ] && echo "Fail." && exit 1
