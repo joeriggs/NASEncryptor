@@ -140,17 +140,24 @@ export NASE_LOCAL_MOUNT_POINT
 encryptorEncryptStart() {
 	local EXPORT_DIR="${1}"
 
+	echo    "  Start NAS Encryptor:"
+	echo -n "    Look for config file ... "
+	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
+
+	echo -n "    Look for record in config file ... "
 	local RECORD=`grep "^${EXPORT_DIR}|:|:|" ${ENCRYPTOR_CONF_FILE}`
-	# TODO - error checking
+	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
 
+	echo -n "    Parse the record ... "
 	local LCL_MOUNT_POINT=` echo ${RECORD} | sed -e "s/|:|:|/ /g;" | awk {'print $2'}`
+	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1
 	local ENCFS_EXPORT_DIR=`echo ${RECORD} | sed -e "s/|:|:|/ /g;" | awk {'print $3'}`
+	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1
 	local PASSWORD=`        echo ${RECORD} | sed -e "s/|:|:|/ /g;" | awk {'print $4'}`
+	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
 
-	echo ""
-	echo "  EncFS Internal mounting:"
-	echo "    ${ENCFS_EXPORT_DIR} -> ${LCL_MOUNT_POINT}"
-	echo ""
+	echo "    EncFS Internal mounting:"
+	echo "      ${ENCFS_EXPORT_DIR} -> ${LCL_MOUNT_POINT}"
 
 	if [ -f ${LCL_MOUNT_POINT}/.encfs6.xml ]; then
 		encryptorRemount  ${ENCFS_EXPORT_DIR} ${LCL_MOUNT_POINT} ${PASSWORD}
@@ -158,11 +165,10 @@ encryptorEncryptStart() {
 		encryptorNewMount ${ENCFS_EXPORT_DIR} ${LCL_MOUNT_POINT} ${PASSWORD}
 	fi
 
-	echo "" ; echo "================================================="
-	echo "SETTING LOCAL_MOUNT_POINT=${ENCFS_EXPORT_DIR}"
-	echo "" ; echo "================================================="
+	echo "    Resetting LOCAL_MOUNT_POINT=${ENCFS_EXPORT_DIR}"
 	export LOCAL_MOUNT_POINT=${ENCFS_EXPORT_DIR}
 
+	echo ""
 	return 0
 }
 
@@ -251,19 +257,30 @@ encryptorAddDirectory() {
 			echo "    Error: Passwords don't match.  Try again."
 		fi
 	done
-
 	echo ""
+
+	# Make sure we don't already have a record in our config file for this
+	# exported directory.
+	echo -n "  Make sure EncFS record is unique ... "
+	local RECORD=`grep "^${EXPORT_DIR}|:|:|" ${ENCRYPTOR_CONF_FILE}`
+	[ ! -z "${RECORD}" ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
 
 	# Create the directory that EncFS will export the encrypted files
 	# through.  This is a local directory on the NAS Proxy computer.
 	local ENCFS_EXPORT_DIR="/encfs/${EXPORT_DIR}"
-	mkdir -p ${ENCFS_EXPORT_DIR}
-	# TODO error checking.
 
-	# Save the information.  Don't worry about duplicates for now.  We will
-	# fix that after we get a single mount working.
+	echo "  Create EncFS export dir (${ENCFS_EXPORT_DIR}):"
+	echo -n "    Make sure dir doesn't already exist ... "
+	[ -e ${ENCFS_EXPORT_DIR} ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
+
+	echo -n "    Create dir ... "
+	mkdir -p ${ENCFS_EXPORT_DIR} &> /dev/null
+	[ $? -ne 0 ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
+
+	# Save the information.
+	echo -n "    Save the info in the config file ... "
 	echo "${EXPORT_DIR}|:|:|${MOUNT_POINT}|:|:|${ENCFS_EXPORT_DIR}|:|:|${PW1}" >> ${ENCRYPTOR_CONF_FILE}
-	# TODO error checking.
+	[ $? -ne 0 ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
 
 	return 0
 }
