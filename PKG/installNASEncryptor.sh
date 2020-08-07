@@ -1,5 +1,15 @@
 #!/bin/bash
 
+################################################################################
+# This script runs on the NASProxy VM at build-time.  It is responsible for
+# performing all of the work that is required to install the NASEncryptor and
+# prepare it for operation.
+#
+# Output:
+#   0 - success.
+#   1 - failure.
+################################################################################
+
 ####################
 # Get the names of the file(s) that we need to install.
 echo -n "Get the name of the tinyxml2 RPM file ... "
