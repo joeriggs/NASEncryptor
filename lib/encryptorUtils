@@ -1,10 +1,10 @@
 
 ################################################################################
-# Common macros and functions for the NAS Encryptor.  Their relationships are
-# as follows:
+# Common macros and functions for the NAS Encryptor.  The NASProxy product knows
+# how and when to call these functions.
 #
-# - encryptorInitialization() is called once when a shell script runs.  This
-#   function is free to do whatever is necessary in order to make sure the
+# - encryptorInitialization() is called once when a NASProxy shell script runs.
+#   This function is free to do whatever is necessary in order to make sure the
 #   other NAS Encryptor functions can run.
 #
 # - encryptorAddDirectory() gathers information from the user (as it pertains
@@ -22,9 +22,26 @@
 #
 ################################################################################
 
-ENCRYPTOR_CONF_FILE=/usr/local/etc/NASEncryptor.conf
+readonly ENCRYPTOR_CONF_FILE=/usr/local/etc/NASEncryptor.conf
 
 ################################################################################
+################################################################################
+########################                                ########################
+#######################    THESE ARE PRIVATE FUNCTIONS   #######################
+########################                                ########################
+################################################################################
+################################################################################
+
+################################################################################
+# This function is called from encryptorRemount() and encryptorNewMount().
+# Those functions create a shell script that this function will execute.
+#
+# Input:
+#   MOUNT_SCRIPT - The pathname of the shell script that we should execute.
+#
+# Output:
+#   0 = success.
+#   1 = failure.
 ################################################################################
 encryptorExecuteMountCmd() {
 	local MOUNT_SCRIPT=${1}
@@ -35,10 +52,66 @@ encryptorExecuteMountCmd() {
 	for COUNT in {1..5}; do
 		${MOUNT_SCRIPT} &> ${LOG}
 		RC=$?
+		[ ${RC} -eq 0 ] && break
 	done
+
+	[ ${RC} -eq 0 ] && return 0
+	return 1
 }
 
 ################################################################################
+# This function is called from encryptorEncryptStart() if the directory that is
+# specified by NAS_MOUNT is already an EncFS-encrypted directory.  This function
+# creates a shell script that will re-mount.
+#
+# Input:
+#   ENCFS_EXPORT - The directory that where the encrypted files are accessed
+#                  by the proxy_bridge driver.
+#
+#   NAS_MOUNT    - The directory that contains the EncFS-encrypted files.
+#
+#   PASSWORD     - The password that EncFS requires in order to remount.
+#
+# Output:
+#   0 = success.
+#   1 = failure.
+################################################################################
+encryptorRemount() {
+	local ENCFS_EXPORT="${1}"
+	local NAS_MOUNT="${2}"
+	local PASSWORD="${3}"
+
+	local SCRIPT=/tmp/j.sh
+
+	cat > ${SCRIPT} << EOF
+#!/usr/bin/expect -f
+set timeout 3600
+spawn encfs "${NAS_MOUNT}" "${ENCFS_EXPORT}"
+expect "EncFS Password: "
+send "${PASSWORD}\r"
+expect "# "
+EOF
+
+	encryptorExecuteMountCmd ${SCRIPT}
+}
+
+################################################################################
+# This function is called from encryptorEncryptStart() if the directory that is
+# specified by NAS_MOUNT is a new EncFS-encrypted directory.  The user has
+# provided a password, and this function will apply that password to the new
+# EncFS-encrypted directory.
+#
+# Input:
+#   ENCFS_EXPORT - The directory that where the encrypted files will be
+#                  accessed by the proxy_bridge driver.
+#
+#   NAS_MOUNT    - The directory that will contain the EncFS-encrypted files.
+#
+#   PASSWORD     - The password that EncFS requires in order to remount.
+#
+# Output:
+#   0 = success.
+#   1 = failure.
 ################################################################################
 encryptorNewMount() {
 	local ENCFS_EXPORT="${1}"
@@ -65,27 +138,6 @@ EOF
 
 ################################################################################
 ################################################################################
-encryptorRemount() {
-	local ENCFS_EXPORT="${1}"
-	local NAS_MOUNT="${2}"
-	local PASSWORD="${3}"
-
-	local SCRIPT=/tmp/j.sh
-
-	cat > ${SCRIPT} << EOF
-#!/usr/bin/expect -f
-set timeout 3600
-spawn encfs "${NAS_MOUNT}" "${ENCFS_EXPORT}"
-expect "EncFS Password: "
-send "${PASSWORD}\r"
-expect "# "
-EOF
-
-	encryptorExecuteMountCmd ${SCRIPT}
-}
-
-################################################################################
-################################################################################
 ########################                                ########################
 #######################  PUBLIC API IS BELOW THIS POINT  #######################
 ########################                                ########################
@@ -96,9 +148,9 @@ EOF
 # Initialization function for the NAS Encryptor.
 #
 # Input:
-#   LOG_FILE    = The name of the utility's log file.
+#   LOG_FILE - The name of the utility's log file.
 #
-#   VERBOSE     = Display console output.
+#   VERBOSE  - Display console output.
 #
 # Output:
 #   0 - success.
@@ -111,111 +163,6 @@ encryptorInitialization() {
 	[ ${VERBOSE} -eq 1 ] && echo -n "  Initializing the NAS Encryptor library ... "
 	#[ $? -ne 0 ] && echo "Fail." && exit 1
 	[ ${VERBOSE} -eq 1 ] && printResult ${RESULT_PASS}
-
-	return 0
-}
-
-################################################################################
-# Perform the steps necessary to encrypt the specified exported directory.  The
-# directory has already been described by the user, and the configuration info
-# has been stored in the config file(s).  We we're just supposed to go ahead and
-# start encrypting the directory.
-#
-# Note that this might be the first time the user has attempted to encrypt the
-# directory.  Be prepared to deal with those "first time" steps.
-#
-# Input:
-#   EXPORT_DIR  - The name of the directory that will be exported to the user.
-#                 We use this name to locate the necessary information in our
-#                 config file.
-#
-# Output:
-#   0 - success.
-#   1 - failure.
-#
-################################################################################
-NASE_LOCAL_MOUNT_POINT=/encfs/export/nfsDir
-export NASE_LOCAL_MOUNT_POINT
-
-encryptorEncryptStart() {
-	local EXPORT_DIR="${1}"
-
-	echo    "  Start NAS Encryptor:"
-	echo -n "    Look for config file ... "
-	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
-
-	echo -n "    Look for record in config file ... "
-	local RECORD=`grep "^${EXPORT_DIR}|:|:|" ${ENCRYPTOR_CONF_FILE}`
-	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
-
-	echo -n "    Parse the record ... "
-	local LCL_MOUNT_POINT=` echo ${RECORD} | sed -e "s/|:|:|/ /g;" | awk {'print $2'}`
-	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1
-	local ENCFS_EXPORT_DIR=`echo ${RECORD} | sed -e "s/|:|:|/ /g;" | awk {'print $3'}`
-	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1
-	local PASSWORD=`        echo ${RECORD} | sed -e "s/|:|:|/ /g;" | awk {'print $4'}`
-	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
-
-	echo "    EncFS Internal mounting:"
-	echo "      ${ENCFS_EXPORT_DIR} -> ${LCL_MOUNT_POINT}"
-
-	if [ -f ${LCL_MOUNT_POINT}/.encfs6.xml ]; then
-		encryptorRemount  ${ENCFS_EXPORT_DIR} ${LCL_MOUNT_POINT} ${PASSWORD}
-	else
-		encryptorNewMount ${ENCFS_EXPORT_DIR} ${LCL_MOUNT_POINT} ${PASSWORD}
-	fi
-
-	echo "    Resetting LOCAL_MOUNT_POINT=${ENCFS_EXPORT_DIR}"
-	export LOCAL_MOUNT_POINT=${ENCFS_EXPORT_DIR}
-
-	echo ""
-	return 0
-}
-
-################################################################################
-# Perform the steps necessary to stop encrypting the specified exported
-# directory.  Note that there might be problems somewhere.  Keep pushing ahead
-# and try to do as much as possible.  Don't give up because we hit problems.
-# And try to fix as many problems as possible.  We don't want to leave a mess.
-#
-# Input:
-#   EXPORT_DIR  - The name of the directory that is being exported to the user.
-#                 We use this name to locate the necessary information in our
-#                 config file.
-#
-# Output:
-#   0 - success.
-#   1 - failure.
-#
-################################################################################
-encryptorEncryptStop() {
-	local EXPORT_DIR="${1}"
-
-	echo "THIS IS THE encryptorEncryptStop() function."
-
-	return 0
-}
-
-################################################################################
-# Clean up the configuration file(s) so we will no longer encrypt the specified
-# exported directory.  This function doesn't perform the steps necessary to stop
-# decrypting the directory.  It just cleans up the config files and removes the
-# EncFS-export directory so we won't try to encrypt the directory in the future.
-#
-# Input:
-#   EXPORT_DIR  - The name of the directory that used to be exported to the user.
-#                 We use this name to locate the necessary information in our
-#                 config file.
-#
-# Output:
-#   0 - success.
-#   1 - failure.
-#
-################################################################################
-encryptorDelDirectory() {
-	local EXPORT_DIR="${1}"
-
-	echo "THIS IS THE encryptorDelDirectory() function."
 
 	return 0
 }
@@ -281,6 +228,112 @@ encryptorAddDirectory() {
 	echo -n "    Save the info in the config file ... "
 	echo "${EXPORT_DIR}|:|:|${MOUNT_POINT}|:|:|${ENCFS_EXPORT_DIR}|:|:|${PW1}" >> ${ENCRYPTOR_CONF_FILE}
 	[ $? -ne 0 ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
+
+	return 0
+}
+
+################################################################################
+# Perform the steps necessary to encrypt the specified exported directory.  The
+# directory has already been described by the user, and the configuration info
+# has been stored in the config file(s).  We're just supposed to mount and
+# start encrypting the directory.
+#
+# Note that this might be the first time the user has attempted to encrypt the
+# directory.  Be prepared to deal with those "first time" steps.
+#
+# Input:
+#   EXPORT_DIR  - The name of the directory that will be exported to the user.
+#                 We use this name to locate the necessary information in our
+#                 config file.
+#
+# Output:
+#   0 - success.  LOCAL_MOUNT_POINT is reset to point to the directory that our
+#                 proxy_bridge driver should access.
+#   1 - failure.
+#
+################################################################################
+encryptorEncryptStart() {
+	local EXPORT_DIR="${1}"
+
+	echo    "  Start NAS Encryptor:"
+	echo -n "    Look for config file ... "
+	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
+
+	echo -n "    Look for record in config file ... "
+	local RECORD=`grep "^${EXPORT_DIR}|:|:|" ${ENCRYPTOR_CONF_FILE}`
+	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
+
+	echo -n "    Parse the record ... "
+	local LCL_MOUNT_POINT=` echo ${RECORD} | sed -e "s/|:|:|/ /g;" | awk {'print $2'}`
+	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1
+	local ENCFS_EXPORT_DIR=`echo ${RECORD} | sed -e "s/|:|:|/ /g;" | awk {'print $3'}`
+	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1
+	local PASSWORD=`        echo ${RECORD} | sed -e "s/|:|:|/ /g;" | awk {'print $4'}`
+	[ ! -f ${ENCRYPTOR_CONF_FILE} ] && printResult ${RESULT_FAIL} && return 1 ; printResult ${RESULT_PASS}
+
+	echo "    EncFS Internal mounting:"
+	echo "      ${ENCFS_EXPORT_DIR} -> ${LCL_MOUNT_POINT}"
+
+	if [ -f ${LCL_MOUNT_POINT}/.encfs6.xml ]; then
+		encryptorRemount  ${ENCFS_EXPORT_DIR} ${LCL_MOUNT_POINT} ${PASSWORD}
+	else
+		encryptorNewMount ${ENCFS_EXPORT_DIR} ${LCL_MOUNT_POINT} ${PASSWORD}
+	fi
+
+	# Reset LOCAL_MOUNT_POINT.  The NASProxy code looks at this environment
+	# variable to see where the proxy_bridge driver should go to find the
+	# encrypted files that are stored on the NAS.
+	echo "    Resetting LOCAL_MOUNT_POINT=${ENCFS_EXPORT_DIR}"
+	export LOCAL_MOUNT_POINT=${ENCFS_EXPORT_DIR}
+
+	echo ""
+	return 0
+}
+
+################################################################################
+# Perform the steps necessary to stop encrypting the specified exported
+# directory.  Note that there might be problems somewhere.  Keep pushing ahead
+# and try to do as much as possible.  Don't give up because we hit problems.
+# And try to fix as many problems as possible.  We don't want to leave a mess.
+#
+# Input:
+#   EXPORT_DIR  - The name of the directory that is being exported to the user.
+#                 We use this name to locate the necessary information in our
+#                 config file.
+#
+# Output:
+#   0 - success.
+#   1 - failure.
+#
+################################################################################
+encryptorEncryptStop() {
+	local EXPORT_DIR="${1}"
+
+	echo "THIS IS THE encryptorEncryptStop() function."
+
+	return 0
+}
+
+################################################################################
+# Clean up the configuration file(s) so we will no longer encrypt the specified
+# exported directory.  This function doesn't perform the steps necessary to stop
+# decrypting the directory.  It just cleans up the config files and removes the
+# EncFS-export directory so we won't try to encrypt the directory in the future.
+#
+# Input:
+#   EXPORT_DIR  - The name of the directory that used to be exported to the user.
+#                 We use this name to locate the necessary information in our
+#                 config file.
+#
+# Output:
+#   0 - success.
+#   1 - failure.
+#
+################################################################################
+encryptorDelDirectory() {
+	local EXPORT_DIR="${1}"
+
+	echo "THIS IS THE encryptorDelDirectory() function."
 
 	return 0
 }
