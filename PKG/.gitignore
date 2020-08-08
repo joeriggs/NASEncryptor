@@ -4,3 +4,5 @@ rpmbuild
 # The package file.
 *.tar
 
+# Stuff that we build or download.
+*.rpm

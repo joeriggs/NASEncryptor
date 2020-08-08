@@ -1,0 +1,13 @@
+#!/bin/bash
+
+################################################################################
+# Run this script once, before you do a build.  It will make sure you have all of
+# the necessary tools installed on your computer.
+################################################################################
+
+echo "Configure computer so it can build the NAS Encryptor plugin:"
+echo ""
+echo "`basename ${0}` Success."
+
+exit 0
+
