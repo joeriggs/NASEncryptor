@@ -81,28 +81,6 @@ rm -f ${PKG_FILE} &> ${LOG}
 logMessage "" 1
 
 ########################################
-# EPEL is required in order to get EncFS.  Make sure it's installed.
-logMessage "Make sure EPEL is installed:" 1
-
-logMessage "  Get list of repos ... " 0
-sudo yum repolist &> ${LOG}
-[ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
-
-logMessage "  Check to see if EPEL is installed ... " 0
-grep -q "Extra Packages for Enterprise Linux 8" ${LOG}
-if [ $? -eq 0 ]; then
-	logMessage "Pass." 1
-else
-	logMessage "Missing." 1
-
-	logMessage "    Installing ... " 0
-	sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm &> ${LOG}
-	[ $? -ne 0 ] && logMessage "Fail." 1 && exit 1 ; logMessage "Pass." 1
-fi
-
-logMessage "" 1
-
-########################################
 # Download the packages that are required for EncFS.  Some of them aren't
 # part of the standard CentOS 8 distribution, so we need to get them now.
 logMessage "Download required packages:" 1
